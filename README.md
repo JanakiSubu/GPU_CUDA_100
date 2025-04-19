@@ -12,10 +12,9 @@ A daily log of my hands‑on work in GPU programming alongside learnings from *P
 **Project File:** `vectadd.cu`
 
 **What I Did**  
-- Wrote a CUDA kernel that adds two float arrays element‑by‑element.  
-- Launched one thread per element, each computing `C[i] = A[i] + B[i]`.  
-- Used `blockIdx.x * blockDim.x + threadIdx.x` to map threads to data.  
-- Added an `if (i < N)` guard to prevent out‑of‑bounds writes.
+- Wrote a basic Hello World from GPU Code!
+- Wrote a CUDA kernel that adds two float arrays element‑by‑element.Launched one thread per element, each computing `C[i] = A[i] + B[i]`.Used `blockIdx.x * blockDim.x + threadIdx.x` to map threads to data. Added an `if (i < N)` guard to prevent out‑of‑bounds writes.
+
 
 **Key Takeaways**  
 - Declared and invoked a `__global__` function on the GPU.  
