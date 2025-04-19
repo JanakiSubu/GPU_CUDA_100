@@ -2,7 +2,7 @@
 
 A daily log of my hands‑on work in GPU programming alongside learnings from *Parallel Programming and Optimization* (PMPP).
 
-**Mentor:** [hkproj (https://github.com/hkproj/)  ](https://github.com/hkproj/)  
+**Inspired By:** [hkproj (https://github.com/hkproj/)  ](https://github.com/hkproj/)  
 **100‑Day Challenge Base Repo:** [JanakiSubu/GPU_CUDA_100](https://github.com/JanakiSubu/GPU_CUDA_100/tree/main) 
 
 ---
