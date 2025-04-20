@@ -16,7 +16,7 @@ __global__ void matrixAdd(int *A, int *B, int *C, int N) {
     }
 }
 
-// fill an N×N matrix with random ints in [0,99]
+//  N×N matrix with random ints in [0,99]
 void initMatrix(int *M, int N) {
     for (int i = 0; i < N*N; ++i) {
         M[i] = rand() % 100;
@@ -31,10 +31,10 @@ void verify(int *A, int *B, int *C, int N) {
 }
 
 int main() {
-    // seeding the RNG so we get different values each run
+    // seeding the RNG to get different values each run
     srand((unsigned)time(nullptr));
 
-    int N = 1 << 10;               // working with a
+    int N = 1 << 10;               // 1024 * 1024 matrix
 
     // allocate unified memory for A, B, C
     int *A, *B, *C;
