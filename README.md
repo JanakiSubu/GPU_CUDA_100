@@ -22,4 +22,25 @@ A daily log of my hands‑on work in GPU programming alongside learnings from *P
 - Synchronized the device using `cudaDeviceSynchronize()` to flush and catch errors.
 
 **What I Read**  
-- Finished PMPP Chapter 1: Overview of parallel architectures, CUDA execution model, and fundamentals of GPU programming.  
+- Finished PMPP Chapter 1: Overview of parallel architectures, CUDA execution model, and fundamentals of GPU programming.
+
+## Day 2 — matrixadd.cu
+
+**Project File:** `matrixadd.cu`
+
+**What I Did**  
+- Wrote a CUDA kernel that adds two N×N matrices element‑by‑element. Launched a 2D grid of 16×16 thread‑blocks, mapping each thread to one output element.
+- Added an if (row < N && col < N) guard to prevent out‑of‑bounds writes.
+- 2D thread mapping - used a 2D grid of 16×16 thread‑blocks and computed to map each CUDA thread onto a unique matrix element.
+  `int row = blockIdx.y*blockDim.y + threadIdx.y;`
+  `int col = blockIdx.x*blockDim.x + threadIdx.x;`
+- Allocated and initialized matrices with cudaMallocManaged and a simple initMatrix loop.
+
+**Key Takeaways**  
+- Mastered mapping 2D data onto the CUDA grid–block–thread hierarchy.
+- Saw how a single `__global__` function can process an entire matrix by distributing work.
+
+**What I Read**  
+- Finished PMPP Chapter 2: Memory hierarchy and data locality in CUDA, and why coalesced global loads matter even for simple element‑wise kernels.
+
+  
