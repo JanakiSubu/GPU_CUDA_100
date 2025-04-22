@@ -48,7 +48,7 @@ Project File: `matrix_vec_mult.cu`
 
 **What I Did**
 - Wrote a CUDA kernel that multiplies an N×N matrix by a length‑N vector, computing one dot‑product per thread.
-- Launched a 1D grid of threads (gridSize = (N+blockSize–1)/blockSize, blockSize = 256), mapping threadIdx.x + blockIdx.x*blockDim.x → row index.
+- Launched a 1D grid of threads `(gridSize = (N+blockSize–1)/blockSize, blockSize = 256)`, mapping `threadIdx.x + blockIdx.x*blockDim.x` → row index.
 - Added an if (row < N) guard to prevent out‑of‑bounds accesses.
 - Allocated matrix and vectors with cudaMallocManaged, initialized host data in simple loops, then let unified memory handle host↔device transfers.
 
