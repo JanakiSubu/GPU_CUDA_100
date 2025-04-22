@@ -43,4 +43,27 @@ A daily log of my hands‑on work in GPU programming alongside learnings from *P
 **What I Read**  
 - Finished PMPP Chapter 2: Memory hierarchy and data locality in CUDA, and why coalesced global loads matter even for simple element‑wise kernels.
 
+## Day 3 — matrix_vec_mult.cu
+Project File: `matrix_vec_mult.cu`
+
+**What I Did**
+- Wrote a CUDA kernel that multiplies an N×N matrix by a length‑N vector, computing one dot‑product per thread.
+- Launched a 1D grid of threads (gridSize = (N+blockSize–1)/blockSize, blockSize = 256), mapping threadIdx.x + blockIdx.x*blockDim.x → row index.
+- Added an if (row < N) guard to prevent out‑of‑bounds accesses.
+- Allocated matrix and vectors with cudaMallocManaged, initialized host data in simple loops, then let unified memory handle host↔device transfers.
+
+**Key Takeaways**
+- Learned how to map a 1D data structure (rows of a matrix) onto CUDA’s grid–block–thread hierarchy for dot‑product operations.
+- Understood the importance of bounds checking when the total thread count may exceed the problem size.
+- Saw how a single __global__ kernel can parallelize all row‑wise dot‑products, leveraging unified memory to simplify data management.
+
+
+
+
+
+
+
+
+
+
   
