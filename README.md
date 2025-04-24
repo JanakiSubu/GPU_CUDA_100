@@ -57,6 +57,20 @@ Project File: `matrix_vec_mult.cu`
 - Understood the importance of bounds checking when the total thread count may exceed the problem size.
 - Saw how a single __global__ kernel can parallelize all row‑wise dot‑products, leveraging unified memory to simplify data management.
 
+## Day 04 — partialsum.cu
+**Project File**: `partialsum.cu`
+
+**What I Did**
+- Summed two elements per thread into shared memory with guarded, coalesced loads.
+- Implemented a tree-based inclusive `scan (O(log blockSize))` using synchronized strides.
+- Computed `gridSize = (N + 2*blockSize - 1)/(2*blockSize)` to cover all inputs.
+- Added a `CUDA_CHECK` macro to validate every CUDA API call.
+
+Key Takeaways
+- Tree-based scan pattern: How to implement an in-place inclusive prefix sum in shared memory with minimal divergence.
+- Memory coalescing: Summing two elements per thread maximizes contiguous loads and stores, boosting bandwidth utilization.
+- Grid‐block sizing: Planning 2 elements per thread lets you halve the number of blocks needed, improving occupancy.
+
 
 
 
