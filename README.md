@@ -71,7 +71,31 @@ Key Takeaways
 - Memory coalescing: Summing two elements per thread maximizes contiguous loads and stores, boosting bandwidth utilization.
 - Grid‐block sizing: Planning 2 elements per thread lets you halve the number of blocks needed, improving occupancy.
 
+## Day 05 — layernorm.cu  
+**Project File**: `layernorm.cu`
 
+---
+
+### What I Did
+
+- Implemented **Layer Normalization** on each row of a 2D matrix.
+- Used **shared memory** to store row data, reducing global memory accesses.
+- Calculated **mean** and **variance** for each row, then normalized the elements.
+- Used **`__syncthreads()`** to synchronize threads in a block.
+- Applied **1e-7 epsilon** to avoid divide-by-zero errors in standard deviation.
+- Validated **CUDA API** calls with a **`CUDA_CHECK`** macro.
+
+---
+
+### Key Takeaways
+
+- **Parallelism**: Leveraged CUDA’s thread-block model to process rows independently.
+- **Shared Memory**: Reduced latency by using shared memory for row data.
+- **Grid-Block Sizing**: One block per row optimized performance.
+- **Numerical Stability**: Added epsilon to avoid divide-by-zero errors.
+- **Efficient Memory Access**: Coalesced memory accesses improved bandwidth utilization.
+
+---
 
 
 
