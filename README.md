@@ -97,7 +97,21 @@ Key Takeaways
 
 ---
 
+## Day 06 — MatrixTranspose.cu
 
+**Project File:** `MatrixTranspose.cu`
+
+**What I Did**  
+- Implemented a naïve transpose kernel with bounds checks.  
+- Chose TILE_DIM = 32 and BLOCK_ROWS = 8 so each block handles a 32×32 tile in eight thread-rows, balancing shared-memory usage and occupancy.
+- Launched the kernel with a 2D grid of blocks sized (width + TILE_DIM - 1) / TILE_DIM × (height + TILE_DIM - 1) / TILE_DIM to cover the entire matrix.
+
+**Key Takeaways**  
+- Coalesced Access: Tiling groups global loads and stores into contiguous bursts, significantly improving memory throughput.
+- Shared-Memory Reuse: Staging data in on-chip shared memory reduces redundant global reads and writes.
+- Bank-Conflict Avoidance: Adding one column of padding prevents threads in the same warp from hitting the same shared-memory bank.
+
+---
 
 
 
