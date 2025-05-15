@@ -113,9 +113,35 @@ Key Takeaways
 
 ---
 
+## Day 7 — CUDA Convolution Recipes  
+**Project Files:**  
+- `one_d_convolution.cu`  
+- `one_d_convolution_with_tiling.cu`  
+- `2d_convolution_with_tiling.cu`  
 
+### What I Did  
+- **one_d_convolution.cu**:  
+  - Implemented a naïve 1D convolution kernel that slides a 1×K mask over an input array.  
+  - Mapped each thread to compute one output element, using `blockIdx.x * blockDim.x + threadIdx.x`.  
+  - Added boundary checks (halo cells) to skip out-of-bounds memory accesses.
 
+- **one_d_convolution_with_tiling.cu**:  
+  - Extended the 1D version with shared-memory tiling.  
+  - Loaded each tile (plus halo regions) of the input array into shared memory.  
+  - Used `__syncthreads()` to synchronize before computing the convolution.
 
+- **2d_convolution_with_tiling.cu**:  
+  - Generalized tiling to 2D: divided the input matrix into TILE×TILE patches in shared memory.  
+  - Loaded top, bottom, left, and right halos to handle borders correctly.  
+  - For each output pixel, computed a full MASK×MASK dot-product against the shared-memory tile.
 
-
-  
+### Key Takeaways  
+- **Parallel convolution fundamentals**  
+  - Learned to map CUDA threads to output indices and use halo cells to guard against out-of-bounds reads.  
+- **Shared-memory tiling**  
+  - Mastered loading contiguous blocks (and halos) into on-chip memory to reduce global-memory traffic.  
+- **Synchronization & performance trade-offs**  
+  - Saw how `__syncthreads()` ensures data consistency and how tile size choices impact shared-memory usage, occupancy, and overall throughput.  
+- **Scaling from 1D to 2D**  
+  - Translated 1D tiling patterns into a 2D grid layout and managed corner and edge cases for correct 2D convolution.  
+---
