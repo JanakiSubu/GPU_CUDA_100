@@ -145,3 +145,28 @@ Key Takeaways
 - **Scaling from 1D to 2D**  
   - Translated 1D tiling patterns into a 2D grid layout and managed corner and edge cases for correct 2D convolution.  
 ---
+
+## Day 08 — prefixsum_brent_kung_algorithm.cu
+
+**Project File:** `prefixsum_brent_kung_algorithm.cu`
+
+### What I Did
+- Loaded pairs of elements into shared memory and handled out-of-bounds indices with zero-padding.
+- Implemented the Brent–Kung scan:
+  - **Up-sweep (reduce)**: built a partial‐sum tree in-place.
+  - **Down-sweep**: distributed the partial sums back down to produce the final prefix sums.
+- Launched a 1D grid where each block processes 64 elements (2 × 32 threads).
+- Added rigorous bounds checks on loads and stores to avoid illegal memory accesses.
+- Used `__restrict__` and `const` qualifiers to help the compiler optimize global memory traffic.
+- Wrapped CUDA calls in an `inline checkCudaError()` helper for clearer error reporting.
+
+### Key Takeaways
+- **Hierarchical scan structure**: splitting work into a balanced binary tree (up-sweep) then propagating results (down-sweep) yields work-efficient parallel scans.
+- **Shared‐memory orchestration**: careful use of `__syncthreads()` between strides is critical to ensure correctness without excessive divergence.
+- **Block‐level vs. full-array scan**: while this version computes an inclusive scan within each block, extending it to arbitrary-length arrays requires a second (“carry‐propagate”) pass across blocks.
+- **Performance hygiene**: zero-padding incomplete segments and marking pointers as `__restrict__` prevents hidden data hazards and helps maximize GPU throughput.
+
+---
+
+*Next up: Day 09…*  
+
