@@ -168,5 +168,23 @@ Key Takeaways
 
 ---
 
-*Next up: Day 09…*  
+## Day 09 — flash_attention_forward.cu
 
+**Project File:** `flash_attention_forward.cu`
+
+---
+
+**What I Did**  
+- Implemented a tile-based Flash Attention forward pass in CUDA (toy example: N=2, d=2).  
+- Staged Q, K, V in Br×Bc shared-memory tiles, computed per-tile Q·Kᵀ scores.  
+- Subtracted each row’s max before `expf()` and recorded both max and sum-of-exps for numerical stability.  
+- Accumulated softmax-weighted sums into the output buffer with a single-kernel prototype.  
+
+**Key Takeaways**  
+- **Shared-memory tiling:** Reduced global memory traffic by staging Q/K/V blocks on-chip.  
+- **Numerical stability:** Learned the importance of row-max subtraction to avoid overflow in `expf()`.  
+- **Tile sizing trade-offs:** Observed how Br and Bc (derived from `SRAM_SIZE`) affect occupancy and register usage.  
+
+**What I Read**  
+- Tri Dao et al., “FlashAttention: Fast and Memory‐Efficient Exact Attention with IO-Awareness,” NeurIPS 2022  
+- NVIDIA CUDA C Programming Guide — shared memory, occupancy tuning, and kernel optimizations  
