@@ -187,4 +187,45 @@ Key Takeaways
 
 **What I Read**  
 - Tri Dao et al., “FlashAttention: Fast and Memory‐Efficient Exact Attention with IO-Awareness,” NeurIPS 2022  
-- NVIDIA CUDA C Programming Guide — shared memory, occupancy tuning, and kernel optimizations  
+- NVIDIA CUDA C Programming Guide — shared memory, occupancy tuning, and kernel optimizations
+
+- ## Day 10 — Sparse_MatrixVecMult_Hybrid.cu
+
+**Project File:** `Sparse_MatrixVecMult_Hybrid.cu`
+
+**What I Did**
+- Implemented a hybrid SpMV kernel that packs up to **TH=20** nonzeros per row into ELL (Ellpack), spilling extras into a global COO array via `atomicAdd`.
+- Zero-filled unused ELL slots and stored per-row column indices.
+- In each thread:
+  1. **ELL multiplication:** iterate fixed TH entries per row.  
+  2. **COO accumulation:** scan the global COO list, adding matching-row entries.
+- Wrapped CUDA calls in a `CUDA_CHECK` macro for robust error handling.
+
+**Key Takeaways**
+- **ELL vs. COO trade-offs:** ELL gives regular accesses for up to TH nonzeros; COO handles overflow with minimal padding.
+- **Atomic writes:** `atomicAdd` appends COO entries without precomputing row quotas, at the cost of serialized writes.
+- **Memory layout:** storing ELL in column‐major “slices” (`[p * N + row]`) yields coalesced loads for `x[col]`.
+
+**What I Read**
+- PMPP Chapter 10: Parallel sparse‐matrix techniques—CSR/ELL/COO formats, load balancing, padding for regularized access.
+
+---
+
+## Day 10 — benchmark.py
+
+**Project File:** `benchmark.py`
+
+**What I Did**
+- Built a Python harness to benchmark my CUDA SpMV vs. `torch.sparse.mm`.  
+- Automated:
+  - **NVCC compilation** of `main.cu` with injected `N`, `M`, and `threshold`.  
+  - **Kernel timing** via CUDA events and PyTorch timing events.  
+- Logged **memory usage** (`psutil`) and **estimated sparse footprint** to avoid OOM.
+
+**Key Takeaways**
+- **End-to-end benchmarking** must include compile, transfer, and launch overheads.  
+- **Memory-safety checks** (e.g. cap nnz to 70% of RAM) prevent large-matrix crashes.  
+- **Source injection** simplifies multi-size testing without manual edits.
+
+---
+
