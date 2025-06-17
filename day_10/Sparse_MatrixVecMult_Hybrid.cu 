@@ -1,0 +1,169 @@
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <iostream>
+#include <vector>
+
+#define CUDA_CHECK(call)                                                    \
+    do {                                                                    \
+        cudaError_t err = call;                                             \
+        if (err != cudaSuccess) {                                           \
+            std::cerr << "CUDA error at " << __FILE__ << ':' << __LINE__  \
+                      << " -> " << cudaGetErrorString(err) << std::endl;  \
+            std::exit(EXIT_FAILURE);                                        \
+        }                                                                   \
+    } while (0)
+
+// Hybrid ELL+COO SpMV kernel
+__global__ void ell_coo_spmv(
+    const float* __restrict__ A,         // dense matrix
+    const float* __restrict__ x,         // input vector
+    float* __restrict__ ell_values,      // ELL values [threshold][N]
+    int*   __restrict__ ell_indices,     // ELL column indices
+    float* __restrict__ coo_values,      // COO values
+    int*   __restrict__ coo_rows,        // COO row indices
+    int*   __restrict__ coo_cols,        // COO col indices
+    float* __restrict__ y,               // output vector
+    int*   __restrict__ coo_count,       // global COO counter
+    int N, int M, int threshold)
+{
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= N) return;
+
+    int local_count = 0;
+
+    // Populate ELL and COO formats from dense A
+    for (int col = 0; col < M; ++col) {
+        float val = A[row * M + col];
+        if (val == 0.0f) continue;
+
+        if (local_count < threshold) {
+            int idx = local_count * N + row;
+            ell_values[idx]  = val;
+            ell_indices[idx] = col;
+            local_count++;
+        } else {
+            int coo_idx = atomicAdd(coo_count, 1);
+            coo_values[coo_idx] = val;
+            coo_rows[coo_idx]   = row;
+            coo_cols[coo_idx]   = col;
+        }
+    }
+
+    // Zero-fill remaining ELL slots
+    for (int p = local_count; p < threshold; ++p) {
+        int idx = p * N + row;
+        ell_values[idx]  = 0.0f;
+        ell_indices[idx] = -1;
+    }
+
+    // Compute SpMV using ELL part
+    float sum = 0.0f;
+    for (int p = 0; p < threshold; ++p) {
+        int idx = p * N + row;
+        int col = ell_indices[idx];
+        if (col >= 0) sum += ell_values[idx] * x[col];
+    }
+
+    // Add COO contributions (only entries belonging to this row)
+    int total_coo = *coo_count;
+    for (int i = 0; i < total_coo; ++i) {
+        if (coo_rows[i] == row) {
+            sum += coo_values[i] * x[coo_cols[i]];
+        }
+    }
+
+    y[row] = sum;
+}
+
+int main() {
+    constexpr int N = 1000;                // number of rows
+    constexpr int M = 1000;                // number of cols
+    constexpr int threshold = 20;          // max nonzeros per row in ELL
+
+    // Host data
+    std::vector<float> h_A(N * M);
+    std::vector<float> h_x(M, 1.0f);
+    std::vector<float> h_y(N);
+    std::vector<float> h_ell_values(N * threshold, 0.0f);
+    std::vector<int>   h_ell_indices(N * threshold, -1);
+    std::vector<float> h_coo_values;
+    std::vector<int>   h_coo_rows;
+    std::vector<int>   h_coo_cols;
+    h_coo_values.reserve(N * (M - threshold));
+    h_coo_rows.reserve(N * (M - threshold));
+    h_coo_cols.reserve(N * (M - threshold));
+
+    // Initialize dense matrix A
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < M; ++j) {
+            h_A[i * M + j] = ((i + j) % 3 == 0) ? (i + j) : 0.0f;
+        }
+    }
+
+    // Device memory
+    float *d_A, *d_x, *d_y;
+    float *d_ell_values, *d_coo_values;
+    int   *d_ell_indices, *d_coo_rows, *d_coo_cols, *d_coo_count;
+
+    CUDA_CHECK(cudaMalloc(&d_A,            h_A.size() * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_x,            h_x.size() * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_y,            h_y.size() * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_ell_values,   h_ell_values.size() * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_ell_indices,  h_ell_indices.size() * sizeof(int)));
+    CUDA_CHECK(cudaMalloc(&d_coo_values,   N * M * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_coo_rows,     N * M * sizeof(int)));
+    CUDA_CHECK(cudaMalloc(&d_coo_cols,     N * M * sizeof(int)));
+    CUDA_CHECK(cudaMalloc(&d_coo_count,    sizeof(int)));
+    CUDA_CHECK(cudaMemset(d_coo_count, 0, sizeof(int)));
+
+    // Copy inputs
+    CUDA_CHECK(cudaMemcpy(d_A, h_A.data(), h_A.size() * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_x, h_x.data(), h_x.size() * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_ell_values,  h_ell_values.data(),  h_ell_values.size() * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_ell_indices, h_ell_indices.data(), h_ell_indices.size() * sizeof(int),   cudaMemcpyHostToDevice));
+
+    // Launch parameters
+    int block_size = 256;
+    int grid_size  = (N + block_size - 1) / block_size;
+
+    // Timing events
+    cudaEvent_t start, stop;
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+    CUDA_CHECK(cudaEventRecord(start));
+
+    // Kernel launch
+    ell_coo_spmv<<<grid_size, block_size>>>(
+        d_A, d_x,
+        d_ell_values, d_ell_indices,
+        d_coo_values, d_coo_rows, d_coo_cols,
+        d_y, d_coo_count,
+        N, M, threshold
+    );
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
+    CUDA_CHECK(cudaEventRecord(stop));
+    CUDA_CHECK(cudaEventSynchronize(stop));
+    float ms = 0.0f;
+    CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
+    std::cout << "Kernel time: " << (ms / 1000.0f) << " s\n";
+
+    // Copy results
+    CUDA_CHECK(cudaMemcpy(h_y.data(), d_y, h_y.size() * sizeof(float), cudaMemcpyDeviceToHost));
+    int h_coo_count = 0;
+    CUDA_CHECK(cudaMemcpy(&h_coo_count, d_coo_count, sizeof(int), cudaMemcpyDeviceToHost));
+
+    std::cout << "COO elements: " << h_coo_count << "\n";
+    std::cout << "First 10 outputs:";
+    for (int i = 0; i < 10; ++i) std::cout << ' ' << h_y[i];
+    std::cout << '\n';
+
+    // Cleanup
+    cudaFree(d_A); cudaFree(d_x); cudaFree(d_y);
+    cudaFree(d_ell_values); cudaFree(d_ell_indices);
+    cudaFree(d_coo_values); cudaFree(d_coo_rows); cudaFree(d_coo_cols);
+    cudaFree(d_coo_count);
+
+    return 0;
+}
