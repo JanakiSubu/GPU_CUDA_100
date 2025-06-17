@@ -229,3 +229,33 @@ Key Takeaways
 
 ---
 
+
+## Day 11 — merge\_path\_parallel\_merge.cu
+
+**Project File:** `merge_path_parallel_merge.cu`
+
+**What I Did**
+
+* Implemented the **Merge Path Parallel Merge** algorithm using CUDA.
+* Created a `merge_path_partition()` device function to perform binary search across the diagonal `k = i + j` in the logical 2D merge grid of arrays A and B.
+* Launched `N + M` threads where each thread:
+
+  * Computes its diagonal index and determines the co-rank split `(i, j)`.
+  * Selects the smaller of `A[i]` or `B[j]` and writes to `C[k]`.
+* Used `printf()` inside the kernel to trace: thread ID, diagonal, source array, and output position.
+* Verified the final merged array was fully sorted and correct.
+
+**Key Takeaways**
+
+* **Merge Path** provides a work-balanced parallel merge across threads with no synchronization needed.
+* Learned how to use **diagonal binary search** to assign merge ranges in parallel.
+* Understood how **co-ranking** is generalized in Merge Path and applied in **Thrust** and **CUB**.
+* Added thread-wise kernel printouts to verify correctness and thread assignment.
+
+**What I Read**
+
+* PMPP Chapter 11: Merge Sort, co-rank vs. merge path, and tiled merging.
+* “Merge Path: A Visually Intuitive Approach to Parallel Merging” by Green et al.
+* Thrust and CUB source code: `merge()` and `merge_by_key()` implementation insights.
+---
+
