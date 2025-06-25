@@ -258,4 +258,35 @@ Key Takeaways
 * “Merge Path: A Visually Intuitive Approach to Parallel Merging” by Green et al.
 * Thrust and CUB source code: `merge()` and `merge_by_key()` implementation insights.
 ---
+## Day 12 — tiled_matmul.cu
 
+**Project File:** `tiled_matmul.cu`
+
+### What I Did
+
+- Implemented a **tiled matrix multiplication (GEMM)** kernel on the GPU using shared-memory.  
+- Divided each \(N\times N\) matrix into `TILE_SIZE×TILE_SIZE` sub-blocks that each thread-block cooperatively loads into shared memory.
+  
+- Each thread computes one element of \(C\) by iterating over all tiles:  
+  1. Loads a tile of A and a tile of B into `__shared__` arrays (`sA`, `sB`), zero-padding out-of-bounds entries.  
+  2. Synchronizes with `__syncthreads()`.  
+  3. Performs a `#pragma unroll` inner loop of length `TILE_SIZE` to accumulate the dot-product.  
+  4. Synchronizes again before loading the next tile.
+     
+- Wrapped the kernel launch in **CUDA events** (`cudaEventRecord`/`cudaEventElapsedTime`) to measure in-kernel execution time.  
+- Added host-side setup to:  
+  - Parse `N` from the command line (default 256 for quick demos).  
+  - Allocate and initialize host/device arrays.  
+  - Verify correctness by checking `C[0]` and `C[N*N-1]` against the expected sum.
+
+
+### Key Takeaways
+
+- **Shared-Memory Tiling:** Greatly reduces global-memory traffic by reusing each tile across multiple multiplications.  
+- **Work Distribution:** Each thread handles one output element, ensuring balanced compute.  
+- **Performance Instrumentation:** CUDA events provide precise kernel timing, decoupled from host overhead.  
+
+### What I Read
+- PMPP Chapter 4: Tiled algorithms and memory hierarchies for dense linear algebra.  
+
+---
