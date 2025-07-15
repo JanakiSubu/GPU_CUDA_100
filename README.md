@@ -290,3 +290,49 @@ Key Takeaways
 - PMPP Chapter 4: Tiled algorithms and memory hierarchies for dense linear algebra.  
 
 ---
+## Day 13 — cmpFHD.cu & cmpFHD_real_image.cu
+
+**Project Files:**  
+- `cmpFHD.cu`  
+- `cmpFHD_real_image.cu`  
+
+### What I Did
+
+- **Core FHD kernel** (`cmpFHD.cu`):  
+  - Implemented the Fully-Hybrid Domain (FHD) update pass over non-Cartesian k-space samples in CUDA.  
+  - Broke the full trajectory (`M = 1024` samples) into `CHUNK_SIZE = 256` tiles and loaded each tile into `__constant__` memory (`kx_c, ky_c, kz_c`).  
+  - Each GPU thread:  
+    1. Reads its point coordinates `(x[n], y[n], z[n])` and initial complex accumulator `(rPhi, iPhi)`.  
+    2. Loops over the tile, computes  
+       ```cpp
+       angle = 2π * (kx·x + ky·y + kz·z);
+       realAcc += rMu[m]*cosf(angle) − iMu[m]*sinf(angle);
+       imagAcc += iMu[m]*cosf(angle) + rMu[m]*sinf(angle);
+       ```  
+    3. Writes back updated `(rPhi, iPhi)` and computes magnitude `phiMag = sqrt(r² + i²)`.  
+  - Host orchestration:  
+    - Allocates and initializes host arrays (`h_x, h_y, h_z, h_rMu, h_iMu, h_rPhi, h_iPhi`).  
+    - Copies data to device buffers and, per chunk, uploads trajectory tile via `cudaMemcpyToSymbol`.  
+    - Launches `cmpFHD<<<blocks, 256>>>(…)` and synchronizes.  
+    - Copies results back and prints a few sample values for validation.
+
+- **Real-image extension** (`cmpFHD_real_image.cu`):  
+  - Integrated OpenCV to load a grayscale image (`lena_gray.png` → `CV_32F [0,1]`).  
+  - Mapped pixel `(i, j)` → normalized `(x, y)` and intensity → `z`.  
+  - Ran the identical chunked FHD kernel on this point cloud.  
+  - Converted the per-pixel magnitude back to an 8-bit image and saved `output.jpg`.
+
+###  Key Takeaways
+
+1. **Constant-Memory Tiling**  Broadcasting a small tile of k-space samples to all threads dramatically cuts global-memory pressure.  
+2. **Per-Thread Work Balance**  One thread per output point simplifies divergence and ensures each thread does equal work.  
+3. **Hybrid Memory Management**  Managed vs. explicit `cudaMalloc`/`cudaMemcpy` approaches: tradeoff between simplicity and control.  
+4. **Real-World Pipeline**  Integrating OpenCV with CUDA, handling I/O, pre/post-processing around the core compute kernel.  
+
+### 📖 What I Read
+
+- **PMPP Chapter 14** — Non-Cartesian MRI case study:  
+  Iterative reconstruction techniques, k-space sampling patterns, performance-oriented kernel design.  
+- **NVIDIA CUDA C Programming Guide** — Best practices for constant memory, occupancy tuning, and fast math intrinsics.
+
+---
