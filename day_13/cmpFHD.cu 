@@ -1,0 +1,151 @@
+// cmpFHD.cu
+
+#include <cuda_runtime.h>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <random>
+#include <iostream>
+
+#define FHD_THREADS_PER_BLOCK 256
+#define PI 3.14159265358979323846f
+#define CHUNK_SIZE 256
+
+// Constant memory buffers for one chunk of trajectory
+__constant__ float kx_c[CHUNK_SIZE];
+__constant__ float ky_c[CHUNK_SIZE];
+__constant__ float kz_c[CHUNK_SIZE];
+
+// Kernel: one FHD update over CHUNK_SIZE samples
+__global__ void cmpFHD(
+    float* rPhi, float* iPhi, float* phiMag,
+    const float* x,    const float* y,    const float* z,
+    const float* rMu,  const float* iMu,
+    int chunkSize)
+{
+    int idx = blockIdx.x * FHD_THREADS_PER_BLOCK + threadIdx.x;
+    if (idx >= gridDim.x * FHD_THREADS_PER_BLOCK) return;
+
+    float x_n = x[idx];
+    float y_n = y[idx];
+    float z_n = z[idx];
+
+    float realAcc = rPhi[idx];
+    float imagAcc = iPhi[idx];
+
+    // accumulate over this chunk
+    #pragma unroll 4
+    for (int m = 0; m < chunkSize; ++m) {
+        float angle = 2.0f * PI * (kx_c[m]*x_n + ky_c[m]*y_n + kz_c[m]*z_n);
+        float c = cosf(angle);
+        float s = sinf(angle);
+        realAcc += rMu[m]*c - iMu[m]*s;
+        imagAcc += iMu[m]*c + rMu[m]*s;
+    }
+
+    rPhi[idx]   = realAcc;
+    iPhi[idx]   = imagAcc;
+    phiMag[idx] = sqrtf(realAcc*realAcc + imagAcc*imagAcc);
+}
+
+int main() {
+    const int N = 1024;  // # of points
+    const int M = 1024;  // total trajectory samples
+    const int numChunks = M / CHUNK_SIZE;
+    const int blocks = (N + FHD_THREADS_PER_BLOCK - 1) / FHD_THREADS_PER_BLOCK;
+
+    std::cout << "Starting FHD reconstruction...\n";
+
+    // --- host buffers ---
+    float *h_x = new float[N];
+    float *h_y = new float[N];
+    float *h_z = new float[N];
+    float *h_rMu = new float[M];
+    float *h_iMu = new float[M];
+
+    float *h_rPhi = new float[N];
+    float *h_iPhi = new float[N];
+    float *h_phiMag = new float[N];
+
+    // RNG init
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+    // fill host data
+    for (int i = 0; i < N; ++i) {
+        h_x[i] = dist(rng);
+        h_y[i] = dist(rng);
+        h_z[i] = dist(rng);
+        h_rPhi[i] = h_iPhi[i] = h_phiMag[i] = 0.0f;
+    }
+    for (int i = 0; i < M; ++i) {
+        h_rMu[i] = dist(rng);
+        h_iMu[i] = dist(rng);
+    }
+    std::cout << "Host data initialized.\n";
+
+    // --- device buffers ---
+    float *d_x, *d_y, *d_z;
+    float *d_rMu, *d_iMu;
+    float *d_rPhi, *d_iPhi, *d_phiMag;
+
+    cudaMalloc(&d_x,     N * sizeof(float));
+    cudaMalloc(&d_y,     N * sizeof(float));
+    cudaMalloc(&d_z,     N * sizeof(float));
+    cudaMalloc(&d_rMu,   M * sizeof(float));
+    cudaMalloc(&d_iMu,   M * sizeof(float));
+    cudaMalloc(&d_rPhi,  N * sizeof(float));
+    cudaMalloc(&d_iPhi,  N * sizeof(float));
+    cudaMalloc(&d_phiMag,N * sizeof(float));
+
+    // copy static arrays over
+    cudaMemcpy(d_x, h_x, N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_y, h_y, N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_z, h_z, N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rMu, h_rMu, M * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_iMu, h_iMu, M * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rPhi,h_rPhi,N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_iPhi,h_iPhi,N * sizeof(float), cudaMemcpyHostToDevice);
+
+    // process in trajectory chunks
+    for (int chunk = 0; chunk < numChunks; ++chunk) {
+        std::cout << "Processing chunk " << (chunk+1) 
+                  << " / " << numChunks << "...\n";
+
+        // copy one chunk of trajectory coords into constant memory
+        cudaMemcpyToSymbol(kx_c, h_x  + chunk*CHUNK_SIZE, CHUNK_SIZE * sizeof(float));
+        cudaMemcpyToSymbol(ky_c, h_y  + chunk*CHUNK_SIZE, CHUNK_SIZE * sizeof(float));
+        cudaMemcpyToSymbol(kz_c, h_z  + chunk*CHUNK_SIZE, CHUNK_SIZE * sizeof(float));
+
+        // launch
+        cmpFHD<<<blocks, FHD_THREADS_PER_BLOCK>>>(
+            d_rPhi, d_iPhi, d_phiMag,
+            d_x,     d_y,     d_z,
+            d_rMu,   d_iMu,
+            CHUNK_SIZE);
+
+        cudaDeviceSynchronize();
+    }
+
+    // copy results back
+    cudaMemcpy(h_rPhi,  d_rPhi,   N * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_iPhi,  d_iPhi,   N * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_phiMag,d_phiMag, N * sizeof(float), cudaMemcpyDeviceToHost);
+
+    std::cout << "Results (first 5):\n";
+    for (int i = 0; i < 5; ++i) {
+        std::printf("  [%d] rPhi=%f, iPhi=%f, |Phi|=%f\n",
+                    i, h_rPhi[i], h_iPhi[i], h_phiMag[i]);
+    }
+
+    // cleanup
+    delete [] h_x;     delete [] h_y;     delete [] h_z;
+    delete [] h_rMu;   delete [] h_iMu;
+    delete [] h_rPhi;  delete [] h_iPhi;  delete [] h_phiMag;
+    cudaFree(d_x);     cudaFree(d_y);     cudaFree(d_z);
+    cudaFree(d_rMu);   cudaFree(d_iMu);
+    cudaFree(d_rPhi);  cudaFree(d_iPhi);  cudaFree(d_phiMag);
+
+    std::cout << "Done.\n";
+    return 0;
+}
