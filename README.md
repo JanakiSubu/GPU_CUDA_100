@@ -337,7 +337,7 @@ Key Takeaways
 
 ---
 
-## Day 13 — Graph & Layer Kernels
+## Day 14 — Graph & Layer Kernels
 
 **Project Files:**  
 - [`bfs_kernel.cu`](https://github.com/JanakiSubu/GPU_CUDA_100/blob/main/day_14/Bfs/bfs_gpu.cu)  
