@@ -336,3 +336,40 @@ Key Takeaways
 - **NVIDIA CUDA C Programming Guide** — Best practices for constant memory, occupancy tuning, and fast math intrinsics.
 
 ---
+
+## Day 13 — Graph & Layer Kernels
+
+**Project Files:**  
+- [`bfs_kernel.cu`](https://github.com/JanakiSubu/GPU_CUDA_100/blob/main/day_14/Bfs/bfs_gpu.cu)  
+- [`glu.cu`]([./day_13/glu.cu](https://github.com/JanakiSubu/GPU_CUDA_100/blob/main/day_14/Gelu/glu.cu))  
+- [`linear_kernel.cu`]([./day_13/linear_kernel.cu](https://github.com/JanakiSubu/GPU_CUDA_100/blob/main/day_14/Linear_kernel/linear_kernel.cu))  
+
+### What I Did  
+- **BFS Kernel** (`bfs_kernel.cu`)  
+  1.Wrote a parallel Breadth-First Search kernel using atomic operations to update node labels.  
+  2.Explored level‐by‐level traversal with thread‐safe `atomicCAS` and frontier‐completion flags.
+
+- **GELU Activation** (`glu.cu`)  
+  1. Implemented the GELU (Gaussian Error Linear Unit) activation in CUDA for fast inference.  
+  2. Verified against a Python reference to ensure numerical correctness.
+
+- **Linear Layer** (`linear_kernel.cu`)  
+  1. Built a batched linear layer using cuBLAS for `C = A × B`, followed by a custom bias‐add kernel.  
+  2. Managed host/device memory and orchestrated cuBLAS calls plus CUDA kernel launches.
+
+### Key Takeaways  
+1. Designing graph‐traversal kernels with minimal divergence and safe atomic updates.  
+2. Validating complex CUDA math (GELU) against a straightforward Python implementation.  
+3. Integrating cuBLAS GEMM with custom CUDA kernels for a complete linear layer pipeline.  
+4. Gained deeper insight into dynamic parallelism and its trade-offs in real-world examples.
+
+  
+### What I Read  
+- **PMPP Chapter 12: Parallel Patterns for Graph Searches**  
+  Background on graph structures and traversal mechanisms. Sequential vs. parallel BFS implementations. Optimizations for memory bandwidth and load balancing in graph algorithms.
+- **PMPP Chapter 13: CUDA Dynamic Parallelism**  
+  Fundamentals of launching kernels from the device, memory visibility rules, and nesting depth. Synchronization with streams and events inside dynamic kernels. A recursive Bezier‐curve       example with and without dynamic parallelism.
+
+
+---
+
