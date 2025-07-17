@@ -376,7 +376,7 @@ Key Takeaways
 ## Day 15 — flash_attention_backprop & CNN Backprop in CUDA
 
 **Project Files:**  
-- `flash_attention_backprop.cu`  
+- `flash.cu`  
 - `cnn.cu`  
 
 ### What I Did
