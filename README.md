@@ -373,3 +373,42 @@ Key Takeaways
 
 ---
 
+## Day 15 — flash_attention_backprop & CNN Backprop in CUDA
+
+**Project Files:**  
+- `flash_attention_backprop.cu`  
+- `cnn.cu`  
+
+### What I Did
+
+- **Flash Attention Backprop**  
+  - Extended my Flash Attention forward pass to full backprop: computed gradients w.r.t. Q, K, V via softmax‐and‐matmul reverse chaining.  
+  - Mirrored on-chip tiling (Br×Bc) from the forward pass to keep memory-efficient patterns.  
+  - Diagnosed zero gradients in spots due to mismatched launch configs and missing “col2im” style gather in the tiled layout.  
+
+- **CNN Backprop**  
+  - Built an end-to-end CNN layer in CUDA:  
+    1. **Forward**: conv → ReLU → max-pool using `im2col` → GEMM → `reluAct` → `maxpool` kernels.  
+    2. **Backward**: pooling grads with `atomicAdd`, weight grads via `gemmDW`, input grads via `gemmDX` + `col2im`.  
+  - Added a toy test in `main()` to print activations, pooled outputs, `dW`, and `dX` for validation.
+
+
+### Key Takeaways
+
+1. **Forward/Backward Alignment**  
+   - Any unrolling or tiling in the forward pass must be mirrored exactly in backprop (e.g. implement `col2im` for dX).  
+2. **Launch-Config Precision**  
+   - Off-by-one grid/block calculations often explain zero-gradient anomalies—always double-check your total = rows×cols formulas.  
+3. **Toy-Scale Verification**  
+   - Dump intermediate tensors on a small example before scaling up to catch indexing and memory-layout bugs early.
+
+
+### What I Read
+
+- **PMPP Ch. 15: Molecular Visualization & Analysis**  Thread granularity and memory-coalescing strategies for large biomolecular data.  
+- **PMPP Ch. 16: Machine Learning Case Study**  How cuDNN reduces CNN layers to GEMM under the hood for peak performance.  
+- **PMPP Ch. 17: Parallel Programming & Computational Thinking**  Systematic problem decomposition and balancing compute vs. memory locality.
+
+---
+
+
