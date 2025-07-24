@@ -410,7 +410,7 @@ Key Takeaways
 - **PMPP Ch. 17: Parallel Programming & Computational Thinking**  Systematic problem decomposition and balancing compute vs. memory locality.
 
 ---
-## 🚀 Day 16
+##  Day 16 - Naive Bayes classifier in CUDA
 
 **Code:**  
 `NaiveBayes.cu`, `NaiveBayesKernel.cuh`, `NaiveBayesTrain.cuh`, `NaiveBayesTrain.cpp`, and `main.cpp`
