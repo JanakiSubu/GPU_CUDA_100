@@ -410,5 +410,41 @@ Key Takeaways
 - **PMPP Ch. 17: Parallel Programming & Computational Thinking**  Systematic problem decomposition and balancing compute vs. memory locality.
 
 ---
+## 🚀 Day 16
 
+**Code:**  
+`NaiveBayes.cu`, `NaiveBayesKernel.cuh`, `NaiveBayesTrain.cuh`, `NaiveBayesTrain.cpp`, and `main.cpp`
 
+Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training and inference stages. Leveraging shared memory to maximize computational efficiency, the implementation is structured to divide work among threads for parallelized data processing of feature probabilities.
+
+### 🔧 Components Developed
+
+#### `NaiveBayes.cu`
+- This file contains the CUDA kernel responsible for calculating feature likelihoods and class probabilities in parallel.  
+- Shared memory was used where possible to minimize global memory access penalties.  
+- Optimized kernel launches to balance between grid and block dimensions for datasets with high dimensionality.
+
+#### `NaiveBayesKernel.cuh`
+- Header file declaring the kernel functions, ensuring modularity and separation of concerns in code structure.
+
+#### `NaiveBayesTrain.cuh`
+- Declared the host-side training function, encapsulating the logic to copy data to the GPU, launch CUDA kernels, and retrieve results.
+
+#### `NaiveBayesTrain.cpp`
+- Implemented the host-side training process, providing pre-processing for input data and managing memory transfers between CPU and GPU.
+
+#### `main.cpp`
+- Entry point of the program, performing tasks like loading data, splitting datasets for training and testing, and evaluating model performance after training.
+
+### Key Takeaways
+
+- One-thread-per-sample model enabled scalable histogram-style computation.
+- Shared memory significantly improved update locality for priors and likelihoods.
+- Host-device modularity ensured reusability and clarity.
+- Tuned grid/block dimensions for balanced memory latency and thread occupancy.
+
+### What I Read
+
+- **PMPP Chapter 9: Parallel Histograms and Voting**
+- **PMPP Chapter 5: Synchronization and Shared Memory**
+- **CUDA C Best Practices Guide: Shared memory vs. global memory access efficiency**
