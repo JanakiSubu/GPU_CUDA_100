@@ -448,3 +448,34 @@ Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training 
 - **PMPP Chapter 9: Parallel Histograms and Voting**
 - **PMPP Chapter 5: Synchronization and Shared Memory**
 - **CUDA C Best Practices Guide: Shared memory vs. global memory access efficiency**
+
+## Day 17 — cuBLAS Vector Addition (`cublasSaxpy`)
+
+**Project File:** `vec_cublas.cu`
+
+### What I Did
+- Implemented vector addition on the GPU using the **cuBLAS** library.
+- Used the `cublasSaxpy()` routine to compute `C = A + B` by performing `y = α * x + y` with `α = 1.0f`.
+- Managed cuBLAS handle lifecycle with `cublasCreate()` and `cublasDestroy()`.
+- Allocated memory on the device, initialized host data, and handled data transfers using `cudaMemcpy`.
+- Verified output by copying the result back to host and printing sample elements.
+
+### Key Takeaways
+1. **cuBLAS Handle Management**  
+  Learned to initialize and release cuBLAS context using `cublasCreate()` and `cublasDestroy()` to encapsulate library operations.
+
+2. **AXPY Operation Basics**  
+  Understood that `cublasSaxpy()` computes `y = α * x + y`. Setting `α = 1.0` makes it equivalent to element-wise addition.
+
+3. **Performance & Simplicity**  
+  Observed how vendor-optimized cuBLAS routines offer better performance and cleaner code than writing custom kernels for simple linear algebra operations.
+
+4. **Memory Safety & Error Checking**  
+  Wrapped CUDA and cuBLAS calls in error-checking macros to ensure robustness.
+
+### What I Read
+- **PMPP Chapter 3** — Leveraging cuBLAS and cuRAND libraries for optimized linear algebra and random number generation.
+- **cuBLAS Library Documentation** — Usage pattern and parameter structure for `cublasSaxpy`.
+- **CUDA C Programming Guide** — Best practices for mixing cuBLAS with custom kernels and memory management.
+
+
