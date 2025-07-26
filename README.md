@@ -478,4 +478,35 @@ Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training 
 - **cuBLAS Library Documentation** — Usage pattern and parameter structure for `cublasSaxpy`.
 - **CUDA C Programming Guide** — Best practices for mixing cuBLAS with custom kernels and memory management.
 
+---
 
+---
+## Day 18 — Matrix Multiplication with cuBLAS (cublasSgemm)
+*Project File:* `matmul_cublas.cu`
+
+## What I Did
+* Implemented matrix multiplication using the cuBLAS library function `cublasSgemm()`.
+* Initialized matrices A and B on the host with values `A[i][j] = i + j`, `B[i][j] = i + j` for easy verification.
+* Allocated GPU memory with `cudaMalloc` and transferred matrices from host to device using `cudaMemcpy`.
+* Set scalar values: `alpha = 1.0f`, `beta = 0.0f`.
+* Used `cublasSgemm()` with flags `CUBLAS_OP_N` for no transposition of A or B.
+* Copied result matrix C back to host and printed the result using column-major indexing (`i + j * M`).
+* Managed cuBLAS context creation and destruction using `cublasCreate()` and `cublasDestroy()`.
+
+## Key Takeaways
+* **cuBLAS for GEMM**  
+  Learned to use `cublasSgemm()` for efficient matrix multiplication—crucial for deep learning workloads and scientific computing.
+* **Column-Major Order**  
+  cuBLAS expects column-major layout (Fortran-style), so indexing must follow `i + j * leadingDim` to correctly interpret results.
+* **cuBLAS Handle Lifecycle**  
+  Understood proper creation and destruction of the cuBLAS context (`cublasHandle_t`) to manage library state.
+* **Parameter Mapping**  
+  Mastered the mapping between C-style row-major host matrices and cuBLAS function parameters for correctness and performance.
+
+## What I Read
+* *PMPP Chapter 6: Matrix Multiplication and Shared Memory Optimization*  
+  Foundations of tiled GEMM, matrix layout impacts, and performance best practices.
+* *cuBLAS Developer Guide*  
+  Focused on `cublasSgemm` usage, including leading dimensions, transposition flags, and memory alignment strategies.
+* *CUDA Toolkit Documentation*  
+  Reviewed usage of `cudaMalloc`, `cudaMemcpy`, and proper GPU memory management for third-party libraries.
