@@ -510,3 +510,41 @@ Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training 
   Focused on `cublasSgemm` usage, including leading dimensions, transposition flags, and memory alignment strategies.
 * *CUDA Toolkit Documentation*  
   Reviewed usage of `cudaMalloc`, `cudaMemcpy`, and proper GPU memory management for third-party libraries.
+
+---
+## Day 19 — Fully Connected Neural Network using cuDNN
+
+*Project File:* `fcnet.cu`
+
+### **What I Did**
+
+* Implemented a **fully connected neural network (FCNet)** using the **cuDNN** library in CUDA.
+* Constructed a **3-layer architecture**:
+  * **Input layer** – 1000 neurons
+  * **Two hidden layers** – 512 neurons each
+  * **Output layer** – 10 neurons
+* Emulated dense connections via **1×1 convolutions**.
+* Applied **ReLU activation** after each hidden layer using `cudnnActivationForward`.
+* Initialized weights with **cuRAND** and zeroed the biases.
+* Created and managed cuDNN descriptors for **tensors**, **filters**, **convolutions**, and **activations**.
+* Ran a **10-epoch forward pass** over randomly generated inputs and labels.
+* Printed a sample output from the **final epoch** for verification.
+* Cleaned up all **GPU memory** and **cuDNN descriptors**.
+
+### **Key Takeaways**
+
+* Learned to build **dense layers** using **1×1 convolutions** in cuDNN for GPU acceleration.
+* Gained hands-on with **tensor**, **filter**, and **convolution descriptor** setup and teardown.
+* Mastered the use of `cudnnConvolutionForward`, `cudnnAddTensor` (bias add), and `cudnnActivationForward`.
+* Reinforced best practices for **error checking**, **memory management**, and **resource cleanup**.
+* Saw how cuDNN can model **non-convolutional layers** using its convolution primitives.
+
+### **What I Read**
+
+* **PMPP Chapter 8** — Using cuDNN for Deep Learning: structure mapping & inference pipelines
+* **cuDNN Developer Guide** — Descriptor APIs, activation functions, and forward algorithms
+* **CUDA cuRAND Documentation** — Pseudorandom weight initialization best practices
+* **CUDA Toolkit Programming Guide** — Memory management, synchronization, and debugging techniques
+
+---
+
