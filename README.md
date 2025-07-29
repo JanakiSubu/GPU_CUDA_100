@@ -572,7 +572,27 @@ Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training 
 * **Shared‐Memory Optimization:** Saw significant bandwidth savings by staging constant sin/cos tables in shared memory
 * **Numerical Stability:** Verified that precomputing angles at high precision on the host avoids drift in the GPU’s single‐precision trig evaluations
 * **Launch‐Config Trade-offs:** Balanced block size vs. shared‐memory capacity to maximize occupancy without bank conflicts
-
-
 ---
 
+## Day 21 — `CUDA-accelerated SGD trainer for linear regression`
+
+**Project File:** `cuda_sgc.cu`
+
+**What I Did**
+* Built a CUDA-accelerated SGD trainer for linear regression with weight & bias updates.
+* Wrote `compute_loss` to launch one thread per sample, computing predictions (`X·W + b`) and squared-error losses.
+* Implemented `compute_gradients` using shared memory to reduce per-block bias contributions and atomics for the global bias gradient; also computed per‑weight gradients over all samples.
+* Developed `update_weights` to apply the SGD step (`W ← W – lr·dW`, `b ← b – lr·db`) entirely on the GPU.
+* Created the host routine `train_sgd` to allocate/copy all buffers, orchestrate the loss, gradient, and update kernels across epochs, and retrieve the final parameters.
+
+**Key Takeaways**
+
+* **Shared‑Memory Reduction:** Using a block‑local buffer for bias gradients cuts down on global‑memory traffic and improves reduction performance.
+* **Atomic Operations:** Atomic adds safely combine block reductions into the global bias gradient.
+* **Kernel Partitioning:** Separating loss-computation, gradient-accumulation, and parameter-update into distinct kernels simplifies tuning grid/block sizes for each stage.
+* **GPU Workflow Management:** Mastered the end‑to‑end loop: memory allocation, H2D/D2H transfers, kernel synchronization, and cleanup for iterative training.
+
+**What I Read**
+
+* Best practices for CUDA optimizations: memory coalescing, occupancy tuning, and shared‑memory patterns.
+* Literature on efficient SGD implementations in GPU‑based ML libraries, including block‑level reductions and atomic‑free alternatives.
