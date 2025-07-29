@@ -8,22 +8,22 @@ __device__ void apply_rotary_embedding(
     const int position, // absolute position in sequence
     const float base = 10000.0f
 ) {
-    // Process pairs of elements (real, imaginary)
+    // Processed pairs of elements (real, imaginary)
     for (int i = 0; i < head_dim; i += 2) {
         float freq = 1.0f / powf(base, (float)(i) / head_dim);
         float theta = position * freq;
         
-        // Calculate rotation matrix elements
+        // Calculating rotation matrix elements
         float cos_theta = cosf(theta);
         float sin_theta = sinf(theta);
         
-        // Cache original values
+        // Cacheing original values
         float q_real = q[i];
         float q_img = q[i + 1];
         float k_real = k[i];
         float k_img = k[i + 1];
         
-        // Apply rotation to query
+        // Applied rotation to query
         q[i] = q_real * cos_theta - q_img * sin_theta;
         q[i + 1] = q_real * sin_theta + q_img * cos_theta;
         
@@ -41,8 +41,8 @@ __global__ void rope_kernel(
     const int num_heads,
     const int head_dim
 ) {
-    // Calculate global position
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    // Calculatded global position
+    int idx = blockIdx.x * blockDim.x + threadIdx.x ;
     
     // Calculate batch, sequence position, and head indices
     int batch_idx = idx / (seq_len * num_heads);
@@ -56,8 +56,8 @@ __global__ void rope_kernel(
                    seq_idx * (num_heads * head_dim) +
                    head_idx * head_dim;
     
-    // Apply rotary embedding to this position
-    apply_rotary_embedding(
+
+    apply_rotary_embedding(                    // Apply rotary embedding to this position
         &queries[base_idx],
         &keys[base_idx],
         head_dim,
