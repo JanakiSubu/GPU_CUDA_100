@@ -548,3 +548,31 @@ Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training 
 
 ---
 
+## Day 20 — rope.cu
+
+**Project File:** `rope.cu`
+
+**What I Did**
+
+* Implemented **Rotary Positional Encoding (RoPE)** in CUDA to inject relative position information into transformer token embeddings
+* Wrote a `__global__` kernel that:
+* Splits each query/key vector into even and odd halves
+* Applies element-wise rotation using precomputed sine and cosine values
+* Uses thread indices to map tokens × dimensions → vector elements
+* Loaded the angle table (`θ`) into **shared memory** once per block to minimize global‐memory reads
+* Launched a 2D grid:
+  * `dim3 grid((seq_len + B-1)/B, (dim/2 + T-1)/T)`
+  * `dim3 block(T, 1)` for coalesced access across sequence positions
+* Validated on a toy sequence (N = 128, D = 64) by comparing against a CPU reference implementation and printing sample rotated vectors
+
+**Key Takeaways**
+
+* **RoPE Fundamentals:** Learned how complex‐valued rotations encode relative positions, eliminating the need for explicit absolute embeddings
+* **CUDA Mapping:** Practiced mapping 2D data (tokens × dim/2) onto CUDA’s grid–block–thread hierarchy for element-wise operations
+* **Shared‐Memory Optimization:** Saw significant bandwidth savings by staging constant sin/cos tables in shared memory
+* **Numerical Stability:** Verified that precomputing angles at high precision on the host avoids drift in the GPU’s single‐precision trig evaluations
+* **Launch‐Config Trade-offs:** Balanced block size vs. shared‐memory capacity to maximize occupancy without bank conflicts
+
+
+---
+
