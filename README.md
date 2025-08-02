@@ -596,3 +596,33 @@ Implemented a CUDA-accelerated Naive Bayes classifier, focusing on the training 
 
 * Best practices for CUDA optimizations: memory coalescing, occupancy tuning, and shared‑memory patterns.
 * Literature on efficient SGD implementations in GPU‑based ML libraries, including block‑level reductions and atomic‑free alternatives.
+
+---
+
+## Day 22 — `EM_kernel.cu`
+
+**Project File:** `EM_kernel.cu`
+
+**What I Did**
+
+* Implemented the **Expectation-Maximization (EM)** algorithm in CUDA to cluster 1D data into a specified number of Gaussian mixtures.
+* Wrote the **E-step kernel** (`eStepKernel`) to compute responsibilities:
+  * Launched one thread per data point.
+  * Calculated the weighted Gaussian PDF for each cluster (using current means, σ, and π).
+  * Normalized to obtain per-point posterior probabilities.
+* Wrote the **M-step kernel** (`mStepKernel`) to accumulate sufficient statistics:
+  * Used `atomicAdd` reductions to sum γₖ, γₖ·x, and γₖ·x² across threads.
+  * Launched one thread per data point, looping over all clusters.
+
+**Key Takeaways**
+
+* **CUDA Memory Management:** Mastered allocation, H2D/D2H transfers, and resetting accumulators between iterations.
+* **Parallel Reduction with Atomics:** Leveraged `atomicAdd` for safe, block-level accumulation in the M-step.
+* **GMM & EM Concepts:** Reinforced the iterative nature of EM—alternating E-step and M-step—to maximize the expected log-likelihood and refine cluster parameters on the GPU.
+
+**What I Read**
+
+* PMPP Chapter 7: *Probabilistic Models & Expectation-Maximization* — theory and convergence properties of EM for Gaussian mixtures.
+* NVIDIA CUDA C Programming Guide — best practices for using atomics and optimizing memory throughput in reduction patterns.
+
+---
